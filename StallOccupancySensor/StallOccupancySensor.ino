@@ -1,19 +1,18 @@
-
-
-#define trigPin 9
-#define echoPin 10
-#define led 13
+#define TRIGGER_PIN 9
+#define ECHO_PIN 10
+#define LED_PIN 13
 
 #define VCC 8
 #define GND 11
 
 #define THRESHOLD_DISTANCE 50
+#define SPEED_OF_SOUND_IN_MICROSECONDS_PER_CENTIMETER 29.1
 
 void setup() {
   Serial.begin (9600);
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
-  pinMode(led, OUTPUT);
+  pinMode(TRIGGER_PIN, OUTPUT);
+  pinMode(ECHO_PIN, INPUT);
+  pinMode(LED_PIN, OUTPUT);
   pinMode(VCC, OUTPUT);
   pinMode(GND, OUTPUT);
 
@@ -22,27 +21,59 @@ void setup() {
 }
 
 void loop() {
-  // Send the Pulse
-  long duration, distance;
-  digitalWrite(trigPin, LOW);  
+  long distance = GetDistance();
+  SetTheLEDStatus(distance);
+
+  WriteDistanceToSerialPort(distance);
+
+  delay(500);
+}
+
+long GetDistance(){
+  long duration;
+  long distance;
+
+  SendThePulse();
+  duration = GetDurationUntilReturnSignal();
+  distance = ConvertDurationToDistance(duration);
+
+  return distance;
+}
+
+void SendThePulse(){
+  digitalWrite(TRIGGER_PIN, LOW);  
   delayMicroseconds(2); 
-  digitalWrite(trigPin, HIGH);
+  digitalWrite(TRIGGER_PIN, HIGH);
   delayMicroseconds(10); 
-  digitalWrite(trigPin, LOW);
+  digitalWrite(TRIGGER_PIN, LOW);
+}
 
-  // Listen for the Pulse
-  duration = pulseIn(echoPin, HIGH);
-  distance = (duration/2) / 29.1;
+long GetDurationUntilReturnSignal(){
+  return pulseIn(ECHO_PIN, HIGH);
+}
 
-  // Set the LED status
+long ConvertDurationToDistance(long duration){
+  // The ultrasonic ping will travel from the sensor to the object and back. 
+  // So the distnace is half of the time it took the pink to travel. 
+  // Then convert that time to a distnace in centimeters. 
+  return (duration/2) / SPEED_OF_SOUND_IN_MICROSECONDS_PER_CENTIMETER;
+}
+
+void SetTheLEDStatus(long distance){
   if (distance < THRESHOLD_DISTANCE) { 
-    digitalWrite(led,HIGH); 
+    digitalWrite(LED_PIN,HIGH); 
   }
   else {
-    digitalWrite(led,LOW);
+    digitalWrite(LED_PIN,LOW);
   }
+}
 
-  // Print the distance
+bool IsSomeoneInStall(long distnace){
+  return distnace < THRESHOLD_DISTANCE;
+}
+
+void WriteDistanceToSerialPort(long distance){
+ // Print the distance
   if (distance >= 200 || distance <= 0){
     Serial.println("Out of range");
   }
@@ -50,6 +81,8 @@ void loop() {
     Serial.print(distance);
     Serial.println(" cm");
   }
-  delay(500);
 }
+
+
+
 
