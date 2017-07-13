@@ -2,10 +2,15 @@
 #define ECHO_PIN 10
 #define LED_PIN 13
 
+#define LED_COMMON_PIN 6
+#define LED_R_PIN 7
+#define LED_G_PIN 5
+#define LED_B_PIN 4
+
 #define VCC 8
 #define GND 11
 
-#define THRESHOLD_DISTANCE 50
+#define THRESHOLD_DISTANCE 130
 #define SPEED_OF_SOUND_IN_MICROSECONDS_PER_CENTIMETER 29.1
 
 void setup() {
@@ -18,6 +23,16 @@ void setup() {
 
   digitalWrite(VCC, HIGH);
   digitalWrite(GND, LOW);
+
+  pinMode(LED_COMMON_PIN, OUTPUT);
+  pinMode(LED_R_PIN, OUTPUT);
+  pinMode(LED_G_PIN, OUTPUT);
+  pinMode(LED_B_PIN, OUTPUT);
+
+  digitalWrite(LED_COMMON_PIN, LOW);
+  digitalWrite(LED_R_PIN, LOW);
+  digitalWrite(LED_G_PIN, LOW);
+  digitalWrite(LED_B_PIN, LOW);
 }
 
 void loop() {
@@ -59,17 +74,35 @@ long ConvertDurationToDistance(long duration){
   return (duration/2) / SPEED_OF_SOUND_IN_MICROSECONDS_PER_CENTIMETER;
 }
 
+long lastSightingTime = 0;
 void SetTheLEDStatus(long distance){
-  if (distance < THRESHOLD_DISTANCE) { 
+  if (IsSomeoneInStall(distance)) { 
     digitalWrite(LED_PIN,HIGH); 
+    digitalWrite(LED_R_PIN, HIGH);
+    lastSightingTime = millis();
+  }
+  else if (HasSomeoneBeenInStallInLastTenSeconds()){
+    digitalWrite(LED_PIN,HIGH); 
+    digitalWrite(LED_R_PIN, HIGH);
   }
   else {
     digitalWrite(LED_PIN,LOW);
+    digitalWrite(LED_R_PIN, LOW);
   }
 }
 
-bool IsSomeoneInStall(long distnace){
-  return distnace < THRESHOLD_DISTANCE;
+bool HasSomeoneBeenInStallInLastTenSeconds(){
+  long currentTime = millis();
+
+  return (lastSightingTime + 10000) > currentTime;
+}
+
+bool IsSomeoneInStall(long distance){
+  //return distnace < THRESHOLD_DISTANCE;
+  if(146 < distance && distance < 152){
+    return false;
+  }
+  return true;
 }
 
 void WriteDistanceToSerialPort(long distance){
